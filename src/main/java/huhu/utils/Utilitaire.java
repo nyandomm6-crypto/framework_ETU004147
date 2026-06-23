@@ -53,7 +53,7 @@ public class Utilitaire {
     }
 
     public Map<Class<?>, List<Method>> getClassWithMethode(String nomPackage,
-            Class<? extends Annotation> annotation) throws Exception {
+            Class<? extends Annotation> annotation, Class<? extends Annotation> annotationMet) throws Exception {
 
         Map<Class<?>, List<Method>> resultat = new HashMap<>();
         List<Class<?>> allClass = this.recupererClassesAnnotees(
@@ -62,7 +62,7 @@ public class Utilitaire {
         for (Class<?> classe : allClass) {
             List<Method> methodes = new ArrayList<>();
             for (Method methode : classe.getMethods()) {
-                if (methode.isAnnotationPresent(annotation)) {
+                if (methode.isAnnotationPresent(annotationMet)) {
                     methodes.add(methode);
                 }
             }

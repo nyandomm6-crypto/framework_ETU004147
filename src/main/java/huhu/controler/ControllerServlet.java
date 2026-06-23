@@ -45,7 +45,8 @@ public class ControllerServlet extends HttpServlet {
             // for (Class<?> c : controllers) {
             // listController.add(c.getName());
             // }
-            listMethodes = util.getClassWithMethode(packageName, huhu.annotation.Controller.class);
+            listMethodes = util.getClassWithMethode(packageName, huhu.annotation.Controller.class,
+                    huhu.annotation.UrlMap.class);
 
         } catch (Exception e) {
             throw new ServletException(e);
@@ -67,7 +68,6 @@ public class ControllerServlet extends HttpServlet {
             for (Method method : entry.getValue()) {
                 out.println("  Méthode: " + method.getName());
             }
-            out.println("  Méthode: ");
         }
     }
 }
