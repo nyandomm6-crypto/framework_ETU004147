@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import huhu.annotation.UrlMap;
 import huhu.utils.Utilitaire;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -53,20 +54,79 @@ public class ControllerServlet extends HttpServlet {
         }
     }
 
+    // private void processRequest(HttpServletRequest request, HttpServletResponse
+    // response)
+    // throws ServletException, IOException {
+
+    // StringBuffer url = request.getRequestURL();
+    // response.setContentType("text/plain");
+    // response.setCharacterEncoding("UTF-8");
+
+    // PrintWriter out = response.getWriter();
+    // out.println(url);
+    // out.println("Classe controller");
+    // for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
+    // out.println("Classe: " + entry.getKey().getName());
+    // for (Method method : entry.getValue()) {
+    // out.println(" Méthode: " + method.getName());
+    // }
+    // }
+    // }
+
     private void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        StringBuffer url = request.getRequestURL();
+        String url = request.getRequestURI();
+
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter out = response.getWriter();
-        out.println(url);
-        out.println("Classe controller");
+        out.println("URL : " + url);
+
+        boolean trouve = false;
+
         for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
-            out.println("Classe: " + entry.getKey().getName());
-            for (Method method : entry.getValue()) {
-                out.println("  Méthode: " + method.getName());
+
+            Class<?> classe = entry.getKey();
+
+            for (Method methode : entry.getValue()) {
+
+                UrlMap urlMap = methode.getAnnotation(UrlMap.class);
+
+                if (urlMap != null && urlMap.value().equals(url)) {
+
+                    out.println("URL trouvée");
+                    out.println("Classe : " + classe.getName());
+                    out.println("Méthode : " + methode.getName());
+
+                    trouve = true;
+                    break;
+                }
+            }
+
+            if (trouve)
+                break;
+        }
+
+        if (!trouve) {
+
+            out.println("URL non trouvée");
+            out.println("----------------");
+
+            for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
+
+                out.println("Classe : " + entry.getKey().getName());
+
+                for (Method methode : entry.getValue()) {
+
+                    UrlMap urlMap = methode.getAnnotation(UrlMap.class);
+
+                    if (urlMap != null) {
+                        out.println("   " + urlMap.value() +
+                                " -> " + methode.getName());
+                    }
+                }
             }
         }
     }
