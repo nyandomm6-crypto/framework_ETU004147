@@ -77,13 +77,14 @@ public class ControllerServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String url = request.getRequestURI();
+        String context = request.getContextPath();
+
+        String mapping = url.substring(context.length());
 
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter out = response.getWriter();
-        out.println("URL : " + url);
-
         boolean trouve = false;
 
         for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
@@ -94,7 +95,7 @@ public class ControllerServlet extends HttpServlet {
 
                 UrlMap urlMap = methode.getAnnotation(UrlMap.class);
 
-                if (urlMap != null && urlMap.value().equals(url)) {
+                if (urlMap != null && urlMap.value().equals(mapping)) {
 
                     out.println("URL trouvée");
                     out.println("Classe : " + classe.getName());
