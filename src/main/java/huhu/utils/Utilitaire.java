@@ -2,9 +2,12 @@ package huhu.utils;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Utilitaire {
     public List<Class<?>> recupererClassesAnnotees(
@@ -47,5 +50,25 @@ public class Utilitaire {
         }
 
         return classesAnnotees;
+    }
+
+    public Map<Class<?>, List<Method>> getClassWithMethode(String nomPackage,
+            Class<? extends Annotation> annotation) throws Exception {
+
+        Map<Class<?>, List<Method>> resultat = new HashMap<>();
+        List<Class<?>> allClass = this.recupererClassesAnnotees(
+                nomPackage,
+                annotation);
+        for (Class<?> classe : allClass) {
+            List<Method> methodes = new ArrayList<>();
+            for (Method methode : classe.getMethods()) {
+                if (methode.isAnnotationPresent(annotation)) {
+                    methodes.add(methode);
+                }
+            }
+            resultat.put(classe, methodes);
+        }
+
+        return resultat;
     }
 }

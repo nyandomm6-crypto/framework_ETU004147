@@ -2,8 +2,11 @@ package huhu.controler;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import huhu.utils.Utilitaire;
 import jakarta.servlet.ServletException;
@@ -12,7 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
-    List<String> listController = new ArrayList<>();
+    Map<Class<?>, List<Method>> listMethodes = new HashMap<>();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -35,13 +38,14 @@ public class ControllerServlet extends HttpServlet {
 
         try {
 
-            List<Class<?>> controllers = util.recupererClassesAnnotees(
-                    packageName,
-                    huhu.annotation.Controller.class);
+            // List<Class<?>> controllers = util.recupererClassesAnnotees(
+            // packageName,
+            // huhu.annotation.Controller.class);
 
-            for (Class<?> c : controllers) {
-                listController.add(c.getName());
-            }
+            // for (Class<?> c : controllers) {
+            // listController.add(c.getName());
+            // }
+            listMethodes = util.getClassWithMethode(packageName, huhu.annotation.Controller.class);
 
         } catch (Exception e) {
             throw new ServletException(e);
@@ -58,8 +62,12 @@ public class ControllerServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         out.println(url);
         out.println("Classe controller");
-        for (String controller : listController) {
-            out.println(controller);
+        for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
+            out.println("Classe: " + entry.getKey().getName());
+            for (Method method : entry.getValue()) {
+                out.println("  Méthode: " + method.getName());
+            }
+            out.println("  Méthode: ");
         }
     }
 }
