@@ -2,8 +2,9 @@ package huhu.controler;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 import huhu.utils.Utilitaire;
 import jakarta.servlet.ServletException;
@@ -12,19 +13,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
-    List<String> listController = new ArrayList<>();
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
+    private Map<String, Method> listMethodes = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
@@ -34,32 +24,70 @@ public class ControllerServlet extends HttpServlet {
         Utilitaire util = new Utilitaire();
 
         try {
-
-            List<Class<?>> controllers = util.recupererClassesAnnotees(
+            listMethodes = util.getMapping(
                     packageName,
                     huhu.annotation.Controller.class);
-
-            for (Class<?> c : controllers) {
-                listController.add(c.getName());
-            }
-
         } catch (Exception e) {
             throw new ServletException(e);
         }
     }
 
-    private void processRequest(HttpServletRequest request, HttpServletResponse response)
+    @Override
+    protected void doGet(HttpServletRequest request,
+            HttpServletResponse response)
             throws ServletException, IOException {
 
-        StringBuffer url = request.getRequestURL();
+        processRequest(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
+
+        processRequest(request, response);
+    }
+
+    private void processRequest(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String url = request.getRequestURI();
+        String context = request.getContextPath();
+        String mapping = url.substring(context.length());
+
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter out = response.getWriter();
-        out.println(url);
-        out.println("Classe controller");
-        for (String controller : listController) {
-            out.println(controller);
+
+        Method methode = listMethodes.get(mapping);
+
+        if (methode != null) {
+
+            out.println("URL trouvée : " + mapping);
+            out.println("Classe : " + methode.getDeclaringClass().getName());
+            out.println("Méthode : " + methode.getName());
+
+            // Pour invoquer la méthode plus tard :
+            // Object controller = methode.getDeclaringClass()
+            // .getDeclaredConstructor()
+            // .newInstance();
+            // Object resultat = methode.invoke(controller);
+
+        } else {
+
+            out.println("URL non trouvée : " + mapping);
+            out.println();
+            out.println("URLs disponibles :");
+
+            for (Map.Entry<String, Method> entry : listMethodes.entrySet()) {
+                out.println(entry.getKey()
+                        + " -> "
+                        + entry.getValue().getDeclaringClass().getSimpleName()
+                        + "."
+                        + entry.getValue().getName());
+            }
         }
     }
 }

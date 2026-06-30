@@ -2,9 +2,14 @@ package huhu.utils;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import huhu.annotation.UrlMap;
 
 public class Utilitaire {
     public List<Class<?>> recupererClassesAnnotees(
@@ -47,5 +52,37 @@ public class Utilitaire {
         }
 
         return classesAnnotees;
+    }
+
+    public Map<String, Method> getMapping(String nomPackage,
+            Class<? extends Annotation> annotation) throws Exception {
+
+        Map<String, Method> mapping = new HashMap<>();
+
+        List<Class<?>> classes = recupererClassesAnnotees(nomPackage, annotation);
+
+        for (Class<?> classe : classes) {
+            for (Method methode : classe.getMethods()) {
+
+                if (methode.isAnnotationPresent(UrlMap.class)) {
+
+                    String url = methode.getAnnotation(UrlMap.class).value();
+
+                    if (mapping.containsKey(url)) {
+                        Method ancienne = mapping.get(url);
+                        throw new Exception(
+                                "URL '" + url + "' déjà déclarée dans "
+                                        + ancienne.getDeclaringClass().getName() + "."
+                                        + ancienne.getName()
+                                        + " et "
+                                        + classe.getName() + "." + methode.getName());
+                    }
+
+                    mapping.put(url, methode);
+                }
+            }
+        }
+
+        return mapping;
     }
 }
