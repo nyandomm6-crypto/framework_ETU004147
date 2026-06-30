@@ -3,12 +3,9 @@ package huhu.controler;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import huhu.annotation.UrlMap;
 import huhu.utils.Utilitaire;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -16,19 +13,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
-   private Map<Class<?>, List<Method>> listMethodes = new HashMap<>();
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
+    private Map<String, Method> listMethodes = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
@@ -38,96 +24,69 @@ public class ControllerServlet extends HttpServlet {
         Utilitaire util = new Utilitaire();
 
         try {
-
-            // List<Class<?>> controllers = util.recupererClassesAnnotees(
-            // packageName,
-            // huhu.annotation.Controller.class);
-
-            // for (Class<?> c : controllers) {
-            // listController.add(c.getName());
-            // }
-            listMethodes = util.getClassWithMethode(packageName, huhu.annotation.Controller.class,
-                    huhu.annotation.UrlMap.class);
-
+            listMethodes = util.getMapping(
+                    packageName,
+                    huhu.annotation.Controller.class);
         } catch (Exception e) {
             throw new ServletException(e);
         }
     }
 
-    // private void processRequest(HttpServletRequest request, HttpServletResponse
-    // response)
-    // throws ServletException, IOException {
+    @Override
+    protected void doGet(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
 
-    // StringBuffer url = request.getRequestURL();
-    // response.setContentType("text/plain");
-    // response.setCharacterEncoding("UTF-8");
+        processRequest(request, response);
+    }
 
-    // PrintWriter out = response.getWriter();
-    // out.println(url);
-    // out.println("Classe controller");
-    // for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
-    // out.println("Classe: " + entry.getKey().getName());
-    // for (Method method : entry.getValue()) {
-    // out.println(" Méthode: " + method.getName());
-    // }
-    // }
-    // }
+    @Override
+    protected void doPost(HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
 
-    private void processRequest(HttpServletRequest request, HttpServletResponse response)
+        processRequest(request, response);
+    }
+
+    private void processRequest(HttpServletRequest request,
+            HttpServletResponse response)
             throws ServletException, IOException {
 
         String url = request.getRequestURI();
         String context = request.getContextPath();
-
         String mapping = url.substring(context.length());
 
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter out = response.getWriter();
-        boolean trouve = false;
 
-        for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
+        Method methode = listMethodes.get(mapping);
 
-            Class<?> classe = entry.getKey();
+        if (methode != null) {
 
-            for (Method methode : entry.getValue()) {
+            out.println("URL trouvée : " + mapping);
+            out.println("Classe : " + methode.getDeclaringClass().getName());
+            out.println("Méthode : " + methode.getName());
 
-                UrlMap urlMap = methode.getAnnotation(UrlMap.class);
+            // Pour invoquer la méthode plus tard :
+            // Object controller = methode.getDeclaringClass()
+            // .getDeclaredConstructor()
+            // .newInstance();
+            // Object resultat = methode.invoke(controller);
 
-                if (urlMap != null && urlMap.value().equals(mapping)) {
+        } else {
 
-                    out.println("URL trouvée");
-                    out.println("Classe : " + classe.getName());
-                    out.println("Méthode : " + methode.getName());
+            out.println("URL non trouvée : " + mapping);
+            out.println();
+            out.println("URLs disponibles :");
 
-                    trouve = true;
-                    break;
-                }
-            }
-
-            if (trouve)
-                break;
-        }
-
-        if (!trouve) {
-
-            out.println("URL non trouvée");
-            out.println("----------------");
-
-            for (Map.Entry<Class<?>, List<Method>> entry : listMethodes.entrySet()) {
-
-                out.println("Classe : " + entry.getKey().getName());
-
-                for (Method methode : entry.getValue()) {
-
-                    UrlMap urlMap = methode.getAnnotation(UrlMap.class);
-
-                    if (urlMap != null) {
-                        out.println("   " + urlMap.value() +
-                                " -> " + methode.getName());
-                    }
-                }
+            for (Map.Entry<String, Method> entry : listMethodes.entrySet()) {
+                out.println(entry.getKey()
+                        + " -> "
+                        + entry.getValue().getDeclaringClass().getSimpleName()
+                        + "."
+                        + entry.getValue().getName());
             }
         }
     }
