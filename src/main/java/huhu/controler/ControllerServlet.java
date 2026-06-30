@@ -81,6 +81,16 @@ public class ControllerServlet extends HttpServlet {
             out.println("Classe : " + methode.getDeclaringClass().getName());
             out.println("Méthode : " + methode.getName());
 
+            try {
+                Object controller = methode.getDeclaringClass()
+                        .getDeclaredConstructor()
+                        .newInstance();
+                Object retour = methode.invoke(controller);
+                out.println("Retour = " + retour);
+            } catch (Exception e) {
+                throw new ServletException(e);
+            }
+
         } else {
 
             out.println("Route introuvable");
