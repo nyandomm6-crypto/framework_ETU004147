@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import huhu.annotation.Controller;
+import huhu.utils.MethodMapp;
 import huhu.utils.Utilitaire;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -14,7 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
 
-    private Map<String, Method> listMethodes = new HashMap<>();
+    private Map<MethodMapp, Method> listMethodes = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
@@ -24,9 +26,10 @@ public class ControllerServlet extends HttpServlet {
         Utilitaire util = new Utilitaire();
 
         try {
-            listMethodes = util.getMapping(
+            listMethodes = util.getMappingMethod(
                     packageName,
-                    huhu.annotation.Controller.class);
+                    Controller.class);
+
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -52,36 +55,44 @@ public class ControllerServlet extends HttpServlet {
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        String url = request.getRequestURI();
-        String context = request.getContextPath();
-        String mapping = url.substring(context.length());
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String url = requestUri.substring(contextPath.length());
+
+        String httpMethod = request.getMethod();
+
+        MethodMapp key = new MethodMapp(url, httpMethod);
 
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter out = response.getWriter();
 
-        Method methode = listMethodes.get(mapping);
+        out.println("Recherche : " + key);
+
+        Method methode = listMethodes.get(key);
 
         if (methode != null) {
 
-            out.println("URL trouvée : " + mapping);
+            out.println("Route trouvée");
+            out.println("----------------");
+            out.println("URL : " + url);
+            out.println("HTTP : " + httpMethod);
             out.println("Classe : " + methode.getDeclaringClass().getName());
             out.println("Méthode : " + methode.getName());
 
-            // Pour invoquer la méthode plus tard :
-            // Object controller = methode.getDeclaringClass()
-            // .getDeclaredConstructor()
-            // .newInstance();
-            // Object resultat = methode.invoke(controller);
-
         } else {
 
-            out.println("URL non trouvée : " + mapping);
-            out.println();
-            out.println("URLs disponibles :");
+            out.println("Route introuvable");
+            out.println("-----------------");
+            out.println("URL demandée : " + url);
+            out.println("HTTP : " + httpMethod);
 
-            for (Map.Entry<String, Method> entry : listMethodes.entrySet()) {
+            out.println();
+            out.println("Routes enregistrées :");
+
+            for (Map.Entry<MethodMapp, Method> entry : listMethodes.entrySet()) {
+
                 out.println(entry.getKey()
                         + " -> "
                         + entry.getValue().getDeclaringClass().getSimpleName()

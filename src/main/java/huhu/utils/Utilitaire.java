@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import huhu.annotation.UrlMap;
+import huhu.annotation.UrlMapMeth;
 
 public class Utilitaire {
     public List<Class<?>> recupererClassesAnnotees(
@@ -79,6 +80,44 @@ public class Utilitaire {
                     }
 
                     mapping.put(url, methode);
+                }
+            }
+        }
+
+        return mapping;
+    }
+
+    public Map<MethodMapp, Method> getMappingMethod(
+            String nomPackage,
+            Class<? extends Annotation> annotation) throws Exception {
+
+        Map<MethodMapp, Method> mapping = new HashMap<>();
+
+        List<Class<?>> classes = recupererClassesAnnotees(nomPackage, annotation);
+
+        for (Class<?> classe : classes) {
+            for (Method methode : classe.getMethods()) {
+
+                if (methode.isAnnotationPresent(UrlMapMeth.class)) {
+
+                    MethodMapp key = new MethodMapp(
+                            methode.getAnnotation(UrlMapMeth.class));
+
+                    if (mapping.containsKey(key)) {
+
+                        Method ancienne = mapping.get(key);
+
+                        throw new Exception(
+                                "Route '" + key.getMethod() + " " + key.getUrl()
+                                        + "' déjà déclarée dans "
+                                        + ancienne.getDeclaringClass().getName()
+                                        + "." + ancienne.getName()
+                                        + " et "
+                                        + classe.getName()
+                                        + "." + methode.getName());
+                    }
+
+                    mapping.put(key, methode);
                 }
             }
         }
