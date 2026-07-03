@@ -55,37 +55,38 @@ public class Utilitaire {
         return classesAnnotees;
     }
 
-    public Map<String, Method> getMapping(String nomPackage,
-            Class<? extends Annotation> annotation) throws Exception {
+    // Sprint 2
+    // public Map<String, Method> getMapping(String nomPackage,
+    // Class<? extends Annotation> annotation, Class<?> a) throws Exception {
 
-        Map<String, Method> mapping = new HashMap<>();
+    // Map<String, Method> mapping = new HashMap<>();
 
-        List<Class<?>> classes = recupererClassesAnnotees(nomPackage, annotation);
+    // List<Class<?>> classes = recupererClassesAnnotees(nomPackage, annotation);
 
-        for (Class<?> classe : classes) {
-            for (Method methode : classe.getMethods()) {
+    // for (Class<?> classe : classes) {
+    // for (Method methode : classe.getMethods()) {
 
-                if (methode.isAnnotationPresent(UrlMap.class)) {
+    // if (methode.isAnnotationPresent(UrlMap.class)) {
 
-                    String url = methode.getAnnotation(UrlMap.class).value();
+    // String url = methode.getAnnotation(UrlMap.class).value();
 
-                    if (mapping.containsKey(url)) {
-                        Method ancienne = mapping.get(url);
-                        throw new Exception(
-                                "URL '" + url + "' déjà déclarée dans "
-                                        + ancienne.getDeclaringClass().getName() + "."
-                                        + ancienne.getName()
-                                        + " et "
-                                        + classe.getName() + "." + methode.getName());
-                    }
+    // if (mapping.containsKey(url)) {
+    // Method ancienne = mapping.get(url);
+    // throw new Exception(
+    // "URL '" + url + "' déjà déclarée dans "
+    // + ancienne.getDeclaringClass().getName() + "."
+    // + ancienne.getName()
+    // + " et "
+    // + classe.getName() + "." + methode.getName());
+    // }
 
-                    mapping.put(url, methode);
-                }
-            }
-        }
+    // mapping.put(url, methode);
+    // }
+    // }
+    // }
 
-        return mapping;
-    }
+    // return mapping;
+    // }
 
     public Map<MethodMapp, Method> getMappingMethod(
             String nomPackage,
@@ -109,7 +110,7 @@ public class Utilitaire {
 
                         throw new Exception(
                                 "Route '" + key.getMethod() + " " + key.getUrl()
-                                        + "' déjà déclarée dans "
+                                        + "' deja declaree dans "
                                         + ancienne.getDeclaringClass().getName()
                                         + "." + ancienne.getName()
                                         + " et "

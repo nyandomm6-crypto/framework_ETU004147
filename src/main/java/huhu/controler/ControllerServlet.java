@@ -68,7 +68,7 @@ public class ControllerServlet extends HttpServlet {
 
         PrintWriter out = response.getWriter();
 
-        out.println("Recherche : " + key);
+        // out.println("Recherche : " + key);
 
         Method methode = listMethodes.get(key);
 
