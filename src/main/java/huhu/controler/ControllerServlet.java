@@ -6,9 +6,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import huhu.annotation.Controller;
 import huhu.utils.MethodMapp;
-import huhu.utils.Utilitaire;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,20 +17,17 @@ public class ControllerServlet extends HttpServlet {
 
     private Map<MethodMapp, Method> listMethodes = new HashMap<>();
 
+    @SuppressWarnings("unchecked")
     @Override
     public void init() throws ServletException {
+        // Récupérer le mapping depuis le contexte de l'application
+        ServletContext context = getServletContext();
+        Object mapping = context.getAttribute("mapping");
 
-        String packageName = getServletConfig().getInitParameter("controller-package");
-
-        Utilitaire util = new Utilitaire();
-
-        try {
-            listMethodes = util.getMappingMethod(
-                    packageName,
-                    Controller.class);
-
-        } catch (Exception e) {
-            throw new ServletException(e);
+        if (mapping != null && mapping instanceof Map) {
+            listMethodes = (Map<MethodMapp, Method>) mapping;
+        } else {
+            listMethodes = new HashMap<>();
         }
     }
 
@@ -68,8 +64,6 @@ public class ControllerServlet extends HttpServlet {
 
         PrintWriter out = response.getWriter();
 
-        // out.println("Recherche : " + key);
-
         Method methode = listMethodes.get(key);
 
         if (methode != null) {
@@ -99,10 +93,9 @@ public class ControllerServlet extends HttpServlet {
             out.println("HTTP : " + httpMethod);
 
             out.println();
-            out.println("Routes enregistrées :");
+            out.println("Routes enregistrées (" + listMethodes.size() + ") :");
 
             for (Map.Entry<MethodMapp, Method> entry : listMethodes.entrySet()) {
-
                 out.println(entry.getKey()
                         + " -> "
                         + entry.getValue().getDeclaringClass().getSimpleName()
