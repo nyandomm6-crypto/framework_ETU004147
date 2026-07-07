@@ -19,4 +19,8 @@ public class ModelAndView {
     public Map<String, Object> getAttributes() {
         return attributes;
     }
+
+    public void setAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
 }
