@@ -16,6 +16,8 @@ import jakarta.servlet.http.HttpServletResponse;
 public class ControllerServlet extends HttpServlet {
 
     private Map<MethodMapp, Method> listMethodes = new HashMap<>();
+    private String suffixe;
+    private String prefixe;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -23,6 +25,11 @@ public class ControllerServlet extends HttpServlet {
         // Récupérer le mapping depuis le contexte de l'application
         ServletContext context = getServletContext();
         Object mapping = context.getAttribute("mapping");
+        // prefixe = context.getInitParameter("prefixe");
+        // suffixe = context.getInitParameter("suffixe");
+
+        prefixe = "/WEB-INF/views/";
+        suffixe = ".jsp";
 
         if (mapping != null && mapping instanceof Map) {
             listMethodes = (Map<MethodMapp, Method>) mapping;
@@ -84,6 +91,8 @@ public class ControllerServlet extends HttpServlet {
             } catch (Exception e) {
                 throw new ServletException(e);
             }
+
+        
 
         } else {
 

@@ -157,4 +157,10 @@ public class Utilitaire {
         System.out.println("Total routes: " + mapping.size());
         return mapping;
     }
+
+    // public List<ModelAndView> getModelAndViewList(String Suffixe, String Prefixe) {
+
+    //     return new ArrayList<>();
+    // }
+
 }
