@@ -12,8 +12,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarEntry; // <-- IMPORTANT
-import java.util.jar.JarFile; // <-- IMPORTANT
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import huhu.annotation.UrlMapMeth;
 
