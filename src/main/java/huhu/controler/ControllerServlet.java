@@ -29,8 +29,20 @@ public class ControllerServlet extends HttpServlet {
 
         Object mapping = context.getAttribute("mapping");
 
-        prefixe = "/WEB-INF/views/";
-        suffixe = ".jsp";
+        prefixe = context.getInitParameter("prefix");
+        suffixe = context.getInitParameter("suffix");
+
+        if (prefixe == null || prefixe.isBlank()) {
+            prefixe = "/WEB-INF/views/";
+        } else if (!prefixe.startsWith("/")) {
+            prefixe = "/" + prefixe;
+        }
+        if (!prefixe.endsWith("/")) {
+            prefixe += "/";
+        }
+        if (suffixe == null) {
+            suffixe = ".jsp";
+        }
 
         if (mapping instanceof Map) {
             listMethodes = (Map<MethodMapp, Method>) mapping;
@@ -57,11 +69,20 @@ public class ControllerServlet extends HttpServlet {
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        String requestUri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-
-        String url = requestUri.substring(contextPath.length());
-        String httpMethod = request.getMethod();
+        String url = request.getPathInfo();
+        if (url == null || url.isBlank()) {
+            url = request.getServletPath();
+        }
+        if (url == null || url.isBlank()) {
+            url = "/";
+        }
+        if (!url.startsWith("/")) {
+            url = "/" + url;
+        }
+        if (url.length() > 1 && url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        String httpMethod = request.getMethod().toUpperCase();
 
         MethodMapp key = new MethodMapp(url, httpMethod);
 
