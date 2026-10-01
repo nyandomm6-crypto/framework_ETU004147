@@ -9,9 +9,11 @@ import java.util.Map;
 import huhu.utils.MethodMapp;
 import huhu.view.ModelAndView;
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
@@ -43,7 +45,6 @@ public class ControllerServlet extends HttpServlet {
         if (suffixe == null) {
             suffixe = ".jsp";
         }
-
         if (mapping instanceof Map) {
             listMethodes = (Map<MethodMapp, Method>) mapping;
         }
@@ -69,13 +70,8 @@ public class ControllerServlet extends HttpServlet {
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        String url = request.getPathInfo();
-        if (url == null || url.isBlank()) {
-            url = request.getServletPath();
-        }
-        if (url == null || url.isBlank()) {
-            url = "/";
-        }
+        String url = request.getRequestURI()
+                .substring(request.getContextPath().length());
         if (!url.startsWith("/")) {
             url = "/" + url;
         }
@@ -141,7 +137,7 @@ public class ControllerServlet extends HttpServlet {
                                     + "Vérifiez que le fichier existe dans : src/main/webapp" + jsp);
                 }
 
-                request.getRequestDispatcher(jsp).forward(request, response);
+                forwardToJsp(request, response, jsp);
                 return;
             }
 
@@ -151,5 +147,34 @@ public class ControllerServlet extends HttpServlet {
         } catch (Exception e) {
             throw new ServletException(e);
         }
+    }
+
+    private void forwardToJsp(HttpServletRequest request,
+            HttpServletResponse response,
+            String jsp) throws ServletException, IOException {
+
+        RequestDispatcher dispatcher = getServletContext().getNamedDispatcher("jsp");
+        if (dispatcher == null) {
+            throw new ServletException("Le servlet JSP de Tomcat est introuvable");
+        }
+
+        HttpServletRequest jspRequest = new HttpServletRequestWrapper(request) {
+            @Override
+            public String getRequestURI() {
+                return getContextPath() + jsp;
+            }
+
+            @Override
+            public String getServletPath() {
+                return jsp;
+            }
+
+            @Override
+            public String getPathInfo() {
+                return null;
+            }
+        };
+
+        dispatcher.forward(jspRequest, response);
     }
 }
