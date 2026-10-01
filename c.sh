@@ -5,7 +5,7 @@ rm -rf build
 mkdir -p build/classes
 
 echo "compilation..."
-javac -cp "lib/*" -d build/classes $(find . -name "*.java")
+javac --release 17 -cp "lib/*" -d build/classes $(find src -name "*.java")
 
 if [ $? -ne 0 ]; then
     echo "erreur de compilation"

@@ -6,12 +6,16 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import huhu.annotation.Json;
 import huhu.utils.MethodMapp;
 import huhu.view.ModelAndView;
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
@@ -29,9 +33,20 @@ public class ControllerServlet extends HttpServlet {
 
         Object mapping = context.getAttribute("mapping");
 
-        prefixe = "/WEB-INF/views/";
-        suffixe = ".jsp";
+        prefixe = context.getInitParameter("prefix");
+        suffixe = context.getInitParameter("suffix");
 
+        if (prefixe == null || prefixe.isBlank()) {
+            prefixe = "/WEB-INF/views/";
+        } else if (!prefixe.startsWith("/")) {
+            prefixe = "/" + prefixe;
+        }
+        if (!prefixe.endsWith("/")) {
+            prefixe += "/";
+        }
+        if (suffixe == null) {
+            suffixe = ".jsp";
+        }
         if (mapping instanceof Map) {
             listMethodes = (Map<MethodMapp, Method>) mapping;
         }
@@ -57,78 +72,152 @@ public class ControllerServlet extends HttpServlet {
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        String requestUri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-
-        String url = requestUri.substring(contextPath.length());
-        String httpMethod = request.getMethod();
+        String url = request.getRequestURI()
+                .substring(request.getContextPath().length());
+        if (!url.startsWith("/")) {
+            url = "/" + url;
+        }
+        if (url.length() > 1 && url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        String httpMethod = request.getMethod().toUpperCase();
 
         MethodMapp key = new MethodMapp(url, httpMethod);
 
         Method methode = listMethodes.get(key);
 
         if (methode == null) {
-
-            response.setContentType("text/plain;charset=UTF-8");
-
-            PrintWriter out = response.getWriter();
-
-            out.println("Route introuvable");
-            out.println("-----------------");
-            out.println("URL : " + url);
-            out.println("Méthode HTTP : " + httpMethod);
-            out.println();
-
-            out.println("Routes enregistrées :");
-
-            for (Map.Entry<MethodMapp, Method> entry : listMethodes.entrySet()) {
-                out.println(entry.getKey()
-                        + " -> "
-                        + entry.getValue().getDeclaringClass().getSimpleName()
-                        + "."
-                        + entry.getValue().getName());
-            }
-
+            writeRouteNotFound(response, url, httpMethod);
             return;
         }
 
         try {
-
             Object controller = methode.getDeclaringClass()
                     .getDeclaredConstructor()
                     .newInstance();
 
             Object retour = methode.invoke(controller);
 
-            if (retour instanceof ModelAndView) {
+            if (methode.isAnnotationPresent(Json.class)) {
 
-                ModelAndView mv = (ModelAndView) retour;
+                writeJsonResponse(response, retour);
 
-                if (mv.getAttributes() != null) {
-                    for (Map.Entry<String, Object> entry : mv.getAttributes().entrySet()) {
-                        request.setAttribute(entry.getKey(), entry.getValue());
-                    }
-                }
+            } else if (retour instanceof ModelAndView) {
 
-                String jsp = prefixe + mv.getView() + suffixe;
+                renderView(request, response, (ModelAndView) retour);
 
-                System.out.println("Forward vers : " + jsp);
+            } else {
 
-                if (getServletContext().getResource(jsp) == null) {
-                    throw new ServletException(
-                            "La vue JSP '" + jsp + "' est introuvable.\n"
-                                    + "Vérifiez que le fichier existe dans : src/main/webapp" + jsp);
-                }
+                writeTextResponse(response, retour);
 
-                request.getRequestDispatcher(jsp).forward(request, response);
-                return;
             }
-
-            response.setContentType("text/plain;charset=UTF-8");
-            response.getWriter().println(retour);
 
         } catch (Exception e) {
             throw new ServletException(e);
         }
+    }
+
+    private void writeRouteNotFound(HttpServletResponse response,
+            String url,
+            String httpMethod) throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.setContentType("text/plain;charset=UTF-8");
+
+        PrintWriter out = response.getWriter();
+        out.println("Route introuvable");
+        out.println("-----------------");
+        out.println("URL : " + url);
+        out.println("Méthode HTTP : " + httpMethod);
+        out.println();
+        out.println("Routes enregistrées :");
+
+        for (Map.Entry<MethodMapp, Method> entry : listMethodes.entrySet()) {
+            out.println(entry.getKey() + " -> "
+                    + entry.getValue().getDeclaringClass().getSimpleName()
+                    + "." + entry.getValue().getName());
+        }
+    }
+
+    // private void writeJsonResponse(HttpServletResponse response,
+    // Object retour) throws IOException {
+
+    // response.setStatus(HttpServletResponse.SC_OK);
+    // response.setContentType("application/json;charset=UTF-8");
+    // response.getWriter().print(retour == null ? "null" : retour.toString());
+    // }
+    private void writeJsonResponse(HttpServletResponse response,
+            Object retour) throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        String json = mapper.writeValueAsString(retour);
+
+        PrintWriter out = response.getWriter();
+        out.print(json);
+    }
+
+    private void writeTextResponse(HttpServletResponse response,
+            Object retour) throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("text/plain;charset=UTF-8");
+        response.getWriter().println(retour == null ? "" : retour);
+    }
+
+    private void renderView(HttpServletRequest request,
+            HttpServletResponse response,
+            ModelAndView modelAndView) throws ServletException, IOException {
+
+        if (modelAndView.getAttributes() != null) {
+            for (Map.Entry<String, Object> entry : modelAndView.getAttributes().entrySet()) {
+                request.setAttribute(entry.getKey(), entry.getValue());
+            }
+        }
+
+        String jsp = prefixe + modelAndView.getView() + suffixe;
+        System.out.println("Forward vers : " + jsp);
+
+        if (getServletContext().getResource(jsp) == null) {
+            throw new ServletException(
+                    "La vue JSP '" + jsp + "' est introuvable.\n"
+                            + "Vérifiez que le fichier existe dans : src/main/webapp" + jsp);
+        }
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        forwardToJsp(request, response, jsp);
+    }
+
+    private void forwardToJsp(HttpServletRequest request,
+            HttpServletResponse response,
+            String jsp) throws ServletException, IOException {
+
+        RequestDispatcher dispatcher = getServletContext().getNamedDispatcher("jsp");
+        if (dispatcher == null) {
+            throw new ServletException("Le servlet JSP de Tomcat est introuvable");
+        }
+
+        HttpServletRequest jspRequest = new HttpServletRequestWrapper(request) {
+            @Override
+            public String getRequestURI() {
+                return getContextPath() + jsp;
+            }
+
+            @Override
+            public String getServletPath() {
+                return jsp;
+            }
+
+            @Override
+            public String getPathInfo() {
+                return null;
+            }
+        };
+
+        dispatcher.forward(jspRequest, response);
     }
 }
