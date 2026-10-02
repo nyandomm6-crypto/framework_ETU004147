@@ -3,6 +3,7 @@ package huhu.controler;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -96,7 +97,7 @@ public class ControllerServlet extends HttpServlet {
                     .getDeclaredConstructor()
                     .newInstance();
 
-            Object retour = methode.invoke(controller);
+            Object retour = methode.invoke(controller, resolveArguments(methode, request, response));
 
             if (methode.isAnnotationPresent(Json.class)) {
 
@@ -115,6 +116,64 @@ public class ControllerServlet extends HttpServlet {
         } catch (Exception e) {
             throw new ServletException(e);
         }
+    }
+
+    private Object[] resolveArguments(Method methode,
+            HttpServletRequest request,
+            HttpServletResponse response) throws ServletException {
+
+        Parameter[] parameters = methode.getParameters();
+        Object[] arguments = new Object[parameters.length];
+
+        for (int index = 0; index < parameters.length; index++) {
+            Class<?> type = parameters[index].getType();
+
+            if (type == HttpServletRequest.class) {
+                arguments[index] = request;
+            } else if (type == HttpServletResponse.class) {
+                arguments[index] = response;
+            } else {
+                String name = parameters[index].getName();
+                String value = request.getParameter(name);
+                arguments[index] = convertParameter(name, value, type);
+            }
+        }
+
+        return arguments;
+    }
+
+    private Object convertParameter(String name,
+            String value,
+            Class<?> type) throws ServletException {
+
+        if (value == null) {
+            if (type.isPrimitive()) {
+                throw new ServletException("Paramètre obligatoire absent : " + name);
+            }
+            return null;
+        }
+
+        try {
+            if (type == String.class) {
+                return value;
+            }
+            if (type == int.class || type == Integer.class) {
+                return Integer.valueOf(value);
+            }
+            if (type == long.class || type == Long.class) {
+                return Long.valueOf(value);
+            }
+            if (type == double.class || type == Double.class) {
+                return Double.valueOf(value);
+            }
+            if (type == boolean.class || type == Boolean.class) {
+                return Boolean.valueOf(value);
+            }
+        } catch (NumberFormatException exception) {
+            throw new ServletException("Valeur invalide pour le paramètre " + name, exception);
+        }
+
+        throw new ServletException("Type de paramètre non supporté : " + type.getName());
     }
 
     private void writeRouteNotFound(HttpServletResponse response,
