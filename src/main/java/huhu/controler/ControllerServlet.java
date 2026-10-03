@@ -169,6 +169,8 @@ public class ControllerServlet extends HttpServlet {
             if (type == boolean.class || type == Boolean.class) {
                 return Boolean.valueOf(value);
             }
+
+            // mbola tsy vita class de type tsy primitif
         } catch (NumberFormatException exception) {
             throw new ServletException("Valeur invalide pour le paramètre " + name, exception);
         }
