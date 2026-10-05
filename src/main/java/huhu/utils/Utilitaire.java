@@ -16,6 +16,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import huhu.annotation.UrlMapMeth;
+import jakarta.servlet.ServletContext;
 
 public class Utilitaire {
 
@@ -158,6 +159,91 @@ public class Utilitaire {
 
         System.out.println("Total routes: " + mapping.size());
         return mapping;
+    }
+
+    public Map<MethodMapp, Method> getMappingMethod(
+            ServletContext context,
+            String nomPackage,
+            Class<? extends Annotation> annotation) throws Exception {
+
+        Map<MethodMapp, Method> mapping = getMappingMethod(nomPackage, annotation);
+
+        if (mapping.isEmpty()) {
+            List<Class<?>> classes = recupererClassesDepuisContexte(
+                    context, nomPackage, annotation);
+
+            for (Class<?> classe : classes) {
+                for (Method methode : classe.getMethods()) {
+                    if (!methode.isAnnotationPresent(UrlMapMeth.class)) {
+                        continue;
+                    }
+
+                    MethodMapp key = new MethodMapp(
+                            methode.getAnnotation(UrlMapMeth.class));
+                    if (mapping.containsKey(key)) {
+                        Method ancienne = mapping.get(key);
+                        throw new Exception(
+                                "Route '" + key.getMethod() + " " + key.getUrl()
+                                        + "' déjà déclarée dans "
+                                        + ancienne.getDeclaringClass().getName()
+                                        + "." + ancienne.getName()
+                                        + " et "
+                                        + classe.getName()
+                                        + "." + methode.getName());
+                    }
+                    mapping.put(key, methode);
+                }
+            }
+        }
+
+        System.out.println("Total routes: " + mapping.size());
+        return mapping;
+    }
+
+    private List<Class<?>> recupererClassesDepuisContexte(
+            ServletContext context,
+            String nomPackage,
+            Class<? extends Annotation> annotation) throws Exception {
+
+        List<Class<?>> classes = new ArrayList<>();
+        String resourcePath = "/WEB-INF/classes/" + nomPackage.replace('.', '/') + "/";
+        scannerContexte(context, resourcePath, nomPackage, annotation, classes);
+        return classes;
+    }
+
+    private void scannerContexte(
+            ServletContext context,
+            String resourcePath,
+            String nomPackage,
+            Class<? extends Annotation> annotation,
+            List<Class<?>> classes) throws Exception {
+
+        java.util.Set<String> resources = context.getResourcePaths(resourcePath);
+        if (resources == null) {
+            return;
+        }
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (String resource : resources) {
+            String resourceName = resource.substring(resourcePath.length());
+            if (resource.endsWith("/")) {
+                scannerContexte(
+                        context,
+                        resource,
+                        nomPackage + "." + resourceName.substring(0, resourceName.length() - 1),
+                        annotation,
+                        classes);
+            } else if (resourceName.endsWith(".class")
+                    && !resourceName.contains("$")) {
+                String className = nomPackage + "."
+                        + resourceName.substring(0, resourceName.length() - ".class".length());
+                Class<?> classe = Class.forName(className, false, classLoader);
+                if (classe.isAnnotationPresent(annotation)) {
+                    classes.add(classe);
+                    System.out.println("Classe trouvée via ServletContext: " + className);
+                }
+            }
+        }
     }
 
     // public List<ModelAndView> getModelAndViewList(String Suffixe, String Prefixe) {

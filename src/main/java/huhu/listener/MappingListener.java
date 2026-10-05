@@ -26,6 +26,7 @@ public class MappingListener implements ServletContextListener {
 
             Utilitaire util = new Utilitaire();
             Map<MethodMapp, Method> mapping = util.getMappingMethod(
+                    context,
                     packageName,
                     Controller.class);
 
