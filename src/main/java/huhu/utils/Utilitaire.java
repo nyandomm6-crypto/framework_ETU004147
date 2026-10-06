@@ -269,4 +269,29 @@ public class Utilitaire {
         return nomClasse;
     }
 
+    public static String getNomClasseSimple(String nomClasse) {
+        int index = nomClasse.lastIndexOf('.');
+        if (index != -1 && index < nomClasse.length() - 1) {
+            return nomClasse.substring(index + 1);
+        }
+        return nomClasse;
+    }
+
+    public static Boolean isPrimitiveType(Class<?> type) {
+        return type.isPrimitive() ||
+                type == String.class ||
+                type == Integer.class ||
+                type == Long.class ||
+                type == Double.class ||
+                type == Float.class ||
+                type == Boolean.class ||
+                type == Byte.class ||
+                type == Short.class ||
+                type == Character.class;
+    }
+
+    public static Boolean contenirPoint(String chaine) {
+        return chaine.contains(".");
+    }
+
 }

@@ -10,6 +10,8 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import huhu.annotation.Json;
 import huhu.utils.MethodMapp;
+import huhu.utils.Utilitaire;
+import huhu.utils.Utilitaire;
 import huhu.view.ModelAndView;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.RequestDispatcher;
@@ -142,30 +144,69 @@ public class ControllerServlet extends HttpServlet {
         return arguments;
     }
 
-    private Object convertParameter(String name,
+    private Object convertParameter(
+            String name,
             String value,
             Class<?> type) throws ServletException {
 
         if (value == null) {
+
             if (type.isPrimitive()) {
-                throw new ServletException("Paramètre obligatoire absent : " + name);
+                throw new ServletException(
+                        "Paramètre obligatoire absent : " + name);
             }
+
             return null;
         }
 
         try {
+
+            // String
             if (type == String.class) {
                 return value;
             }
+
+            // Types primitifs + wrappers
+            if (Utilitaire.contenirPoint(name)) {
+                if (isPrimitive(type)) {
+                    return convertPrimitive(name, value, type);
+                }
+            }
+
+            // TODO :
+
+        } catch (NumberFormatException exception) {
+
+            throw new ServletException(
+                    "Valeur invalide pour le paramètre "
+                            + name + " : " + value,
+                    exception);
+        }
+
+        throw new ServletException(
+                "Type de paramètre non supporté : "
+                        + type.getName());
+    }
+
+    private Object convertPrimitive(
+            String name,
+            String value,
+            Class<?> type) throws ServletException {
+
+        try {
+
             if (type == int.class || type == Integer.class) {
                 return Integer.valueOf(value);
             }
+
             if (type == long.class || type == Long.class) {
                 return Long.valueOf(value);
             }
+
             if (type == double.class || type == Double.class) {
                 return Double.valueOf(value);
             }
+
             if (type == boolean.class || type == Boolean.class) {
                 return Boolean.valueOf(value);
             }
@@ -183,22 +224,47 @@ public class ControllerServlet extends HttpServlet {
             }
 
             if (type == char.class || type == Character.class) {
+
                 if (value.length() != 1) {
-                    throw new ServletException("Valeur invalide pour le paramètre " + name + " : " + value);
+                    throw new ServletException(
+                            "Valeur invalide pour le paramètre "
+                                    + name + " : " + value);
                 }
+
                 return value.charAt(0);
             }
 
-            // object de type non primitif
-           
-           
+        } catch (NumberFormatException e) {
 
-            // mbola tsy vita class de type tsy primitif
-        } catch (NumberFormatException exception) {
-            throw new ServletException("Valeur invalide pour le paramètre " + name, exception);
+            throw new ServletException(
+                    "Valeur invalide pour le paramètre "
+                            + name + " : " + value,
+                    e);
         }
 
-        throw new ServletException("Type de paramètre non supporté : " + type.getName());
+        throw new ServletException(
+                "Type primitif non supporté : "
+                        + type.getName());
+    }
+
+    private boolean isPrimitive(Class<?> type) {
+
+        return type == int.class
+                || type == Integer.class
+                || type == long.class
+                || type == Long.class
+                || type == double.class
+                || type == Double.class
+                || type == boolean.class
+                || type == Boolean.class
+                || type == float.class
+                || type == Float.class
+                || type == short.class
+                || type == Short.class
+                || type == byte.class
+                || type == Byte.class
+                || type == char.class
+                || type == Character.class;
     }
 
     private void writeRouteNotFound(HttpServletResponse response,
