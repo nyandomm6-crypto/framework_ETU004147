@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,8 +25,10 @@ final class ServletUtil {
     }
 
     static String prefix(String value) {
-        if (value == null || value.isBlank()) value = "/WEB-INF/views/";
-        else if (!value.startsWith("/")) value = "/" + value;
+        if (value == null || value.isBlank())
+            value = "/WEB-INF/views/";
+        else if (!value.startsWith("/"))
+            value = "/" + value;
         return value.endsWith("/") ? value : value + "/";
     }
 
@@ -35,8 +38,10 @@ final class ServletUtil {
         Object[] result = new Object[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
             Class<?> type = parameters[i].getType();
-            if (type == HttpServletRequest.class) result[i] = request;
-            else if (type == HttpServletResponse.class) result[i] = response;
+            if (type == HttpServletRequest.class)
+                result[i] = request;
+            else if (type == HttpServletResponse.class)
+                result[i] = response;
             else {
                 String name = parameters[i].getName();
                 result[i] = parameter(name, request.getParameter(name), type, request);
@@ -54,8 +59,10 @@ final class ServletUtil {
             Object object = objectIfPresent(name, type, request);
             return object == null ? null : object;
         }
-        if (type == String.class) return value;
-        if (primitive(type)) return primitive(name, value, type);
+        if (type == String.class)
+            return value;
+        if (primitive(type))
+            return primitive(name, value, type);
         return object(name, type, request);
     }
 
@@ -64,7 +71,8 @@ final class ServletUtil {
         try {
             Object object = type.getDeclaredConstructor().newInstance();
             for (Field field : type.getDeclaredFields()) {
-                if (Modifier.isStatic(field.getModifiers())) continue;
+                if (Modifier.isStatic(field.getModifiers()))
+                    continue;
                 String name = prefix + "." + field.getName();
                 Class<?> fieldType = field.getType();
                 String value = request.getParameter(name);
@@ -85,7 +93,8 @@ final class ServletUtil {
 
     private static Object objectIfPresent(String prefix, Class<?> type,
             HttpServletRequest request) throws ServletException {
-        if (type == String.class || primitive(type)) return null;
+        if (type == String.class || primitive(type))
+            return null;
         for (Field field : type.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers())
                     && request.getParameter(prefix + "." + field.getName()) != null) {
@@ -98,13 +107,20 @@ final class ServletUtil {
     private static Object primitive(String name, String value, Class<?> type)
             throws ServletException {
         try {
-            if (type == int.class || type == Integer.class) return Integer.valueOf(value);
-            if (type == long.class || type == Long.class) return Long.valueOf(value);
-            if (type == double.class || type == Double.class) return Double.valueOf(value);
-            if (type == boolean.class || type == Boolean.class) return Boolean.valueOf(value);
-            if (type == float.class || type == Float.class) return Float.valueOf(value);
-            if (type == short.class || type == Short.class) return Short.valueOf(value);
-            if (type == byte.class || type == Byte.class) return Byte.valueOf(value);
+            if (type == int.class || type == Integer.class)
+                return Integer.valueOf(value);
+            if (type == long.class || type == Long.class)
+                return Long.valueOf(value);
+            if (type == double.class || type == Double.class)
+                return Double.valueOf(value);
+            if (type == boolean.class || type == Boolean.class)
+                return Boolean.valueOf(value);
+            if (type == float.class || type == Float.class)
+                return Float.valueOf(value);
+            if (type == short.class || type == Short.class)
+                return Short.valueOf(value);
+            if (type == byte.class || type == Byte.class)
+                return Byte.valueOf(value);
             if ((type == char.class || type == Character.class)
                     && value.length() == 1) {
                 return value.charAt(0);
@@ -151,6 +167,24 @@ final class ServletUtil {
         response.getWriter().print(new ObjectMapper().writeValueAsString(value));
     }
 
+    // static void json(
+    // HttpServletResponse response,
+    // Object value) throws IOException {
+
+    // response.setStatus(HttpServletResponse.SC_OK);
+    // response.setContentType("application/json");
+    // response.setCharacterEncoding("UTF-8");
+
+    // Map<String, Object> result = new HashMap<>();
+
+    // result.put("objet", value.getClass().getSimpleName());
+    // result.put("valeur", value);
+
+    // response.getWriter().print(
+    // new ObjectMapper().writeValueAsString(result)
+    // );
+    // }
+
     static void text(HttpServletResponse response, Object value) throws IOException {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("text/plain;charset=UTF-8");
@@ -173,9 +207,20 @@ final class ServletUtil {
         }
         response.setStatus(HttpServletResponse.SC_OK);
         HttpServletRequest wrapped = new HttpServletRequestWrapper(request) {
-            @Override public String getRequestURI() { return getContextPath() + jsp; }
-            @Override public String getServletPath() { return jsp; }
-            @Override public String getPathInfo() { return null; }
+            @Override
+            public String getRequestURI() {
+                return getContextPath() + jsp;
+            }
+
+            @Override
+            public String getServletPath() {
+                return jsp;
+            }
+
+            @Override
+            public String getPathInfo() {
+                return null;
+            }
         };
         dispatcher.forward(wrapped, response);
     }
