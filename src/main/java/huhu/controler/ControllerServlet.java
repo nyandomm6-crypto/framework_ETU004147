@@ -170,6 +170,29 @@ public class ControllerServlet extends HttpServlet {
                 return Boolean.valueOf(value);
             }
 
+            if (type == float.class || type == Float.class) {
+                return Float.valueOf(value);
+            }
+
+            if (type == short.class || type == Short.class) {
+                return Short.valueOf(value);
+            }
+
+            if (type == byte.class || type == Byte.class) {
+                return Byte.valueOf(value);
+            }
+
+            if (type == char.class || type == Character.class) {
+                if (value.length() != 1) {
+                    throw new ServletException("Valeur invalide pour le paramètre " + name + " : " + value);
+                }
+                return value.charAt(0);
+            }
+
+            // object de type non primitif
+           
+           
+
             // mbola tsy vita class de type tsy primitif
         } catch (NumberFormatException exception) {
             throw new ServletException("Valeur invalide pour le paramètre " + name, exception);
