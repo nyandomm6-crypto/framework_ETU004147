@@ -153,7 +153,6 @@ public class Utilitaire {
                     mapping.put(key, methode);
                 }
 
-                
             }
         }
 
@@ -246,9 +245,53 @@ public class Utilitaire {
         }
     }
 
-    // public List<ModelAndView> getModelAndViewList(String Suffixe, String Prefixe) {
+    // public List<ModelAndView> getModelAndViewList(String Suffixe, String Prefixe)
+    // {
 
-    //     return new ArrayList<>();
+    // return new ArrayList<>();
     // }
+
+    public static String getSuffixe(String nomClasse) {
+        int index = nomClasse.lastIndexOf('.');
+        if (index != -1 && index < nomClasse.length() - 1) {
+            return nomClasse.substring(index + 1);
+        }
+        return "";
+    }
+
+    public static String getPrefixe(String nomClasse) {
+        int index = nomClasse.lastIndexOf('.');
+
+        if (index != -1) {
+            return nomClasse.substring(0, index);
+        }
+
+        return nomClasse;
+    }
+
+    public static String getNomClasseSimple(String nomClasse) {
+        int index = nomClasse.lastIndexOf('.');
+        if (index != -1 && index < nomClasse.length() - 1) {
+            return nomClasse.substring(index + 1);
+        }
+        return nomClasse;
+    }
+
+    public static Boolean isPrimitiveType(Class<?> type) {
+        return type.isPrimitive() ||
+                type == String.class ||
+                type == Integer.class ||
+                type == Long.class ||
+                type == Double.class ||
+                type == Float.class ||
+                type == Boolean.class ||
+                type == Byte.class ||
+                type == Short.class ||
+                type == Character.class;
+    }
+
+    public static Boolean contenirPoint(String chaine) {
+        return chaine.contains(".");
+    }
 
 }
