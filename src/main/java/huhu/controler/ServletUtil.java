@@ -75,10 +75,15 @@ final class ServletUtil {
                     continue;
                 String name = prefix + "." + field.getName();
                 Class<?> fieldType = field.getType();
-                String value = request.getParameter(name);
-                Object converted = value == null
-                        ? objectIfPresent(name, fieldType, request)
-                        : parameter(name, value, fieldType, request);
+             String value = request.getParameter(name);
+
+Object converted;
+
+if (value == null) {
+    converted = objectIfPresent(name, fieldType, request);
+} else {
+    converted = parameter(name, value, fieldType, request);
+}
                 if (converted != null) {
                     field.setAccessible(true);
                     field.set(object, converted);
