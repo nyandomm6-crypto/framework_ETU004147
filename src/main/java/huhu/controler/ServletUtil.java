@@ -6,11 +6,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import huhu.utils.Mapfiles;
 import huhu.utils.MethodMapp;
 import huhu.view.ModelAndView;
 import jakarta.servlet.RequestDispatcher;
@@ -19,6 +22,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
 final class ServletUtil {
     private ServletUtil() {
@@ -53,6 +57,9 @@ final class ServletUtil {
     private static Object parameter(String name, String value, Class<?> type,
             HttpServletRequest request) throws ServletException {
         if (value == null) {
+            Object file = file(name, type, request);
+            if (file != null)
+                return file;
             if (type.isPrimitive()) {
                 throw new ServletException("Paramètre obligatoire absent : " + name);
             }
@@ -76,10 +83,11 @@ final class ServletUtil {
                 String name = prefix + "." + field.getName();
                 Class<?> fieldType = field.getType();
                 String value = request.getParameter(name);
-
                 Object converted;
-
-                if (value == null) {
+                Object file = file(name, fieldType, request);
+                if (file != null) {
+                    converted = file;
+                } else if (value == null) {
                     converted = objectIfPresent(name, fieldType, request);
                 } else {
                     converted = parameter(name, value, fieldType, request);
@@ -102,11 +110,63 @@ final class ServletUtil {
             return null;
         for (Field field : type.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers())
-                    && request.getParameter(prefix + "." + field.getName()) != null) {
+                    && (request.getParameter(prefix + "." + field.getName()) != null
+                            || field.getType() == Mapfiles.class
+                                    && hasFilePart(prefix + "." + field.getName(), request))) {
                 return object(prefix, type, request);
             }
         }
         return null;
+    }
+
+    private static boolean hasFilePart(String name, HttpServletRequest request)
+            throws ServletException {
+        try {
+            Part part = request.getPart(name);
+            return part != null && part.getSubmittedFileName() != null
+                && !part.getSubmittedFileName().isEmpty();
+        } catch (IOException exception) {
+            throw new ServletException("Impossible de lire le fichier " + name,
+                exception);
+        }
+    }
+
+    private static Object file(String name, Class<?> type,
+            HttpServletRequest request) throws ServletException {
+        if (type != Mapfiles.class)
+            return null;
+        try {
+            Part part = request.getPart(name);
+            if (part == null || part.getSubmittedFileName() == null
+                    || part.getSubmittedFileName().isEmpty()) {
+                return null;
+            }
+
+            String fileName = Paths.get(part.getSubmittedFileName())
+                    .getFileName().toString();
+            Path directory = uploadDirectory(request);
+            Files.createDirectories(directory);
+            Files.write(directory.resolve(fileName), part.getInputStream().readAllBytes());
+
+            Mapfiles file = new Mapfiles();
+            file.setFile(Files.readAllBytes(directory.resolve(fileName)));
+            file.setNom(fileName);
+            int extensionIndex = fileName.lastIndexOf('.');
+            file.setExtension(extensionIndex > 0 && extensionIndex < fileName.length() - 1
+                    ? fileName.substring(extensionIndex + 1) : "");
+            return file;
+        } catch (IOException | IllegalStateException exception) {
+            throw new ServletException("Impossible d'enregistrer le fichier " + name,
+                    exception);
+        }
+    }
+
+    private static Path uploadDirectory(HttpServletRequest request) throws ServletException {
+        String location = request.getServletContext().getInitParameter("upload-path");
+        if (location == null || location.isBlank()) {
+            throw new ServletException("Le paramètre de contexte 'upload-path' est absent");
+        }
+        return Path.of(location);
     }
 
     private static Object primitive(String name, String value, Class<?> type)
