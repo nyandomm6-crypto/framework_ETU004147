@@ -2,6 +2,8 @@ package huhu.controler;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,15 @@ public class ControllerServlet extends HttpServlet {
         prefix = ServletUtil.prefix(context.getInitParameter("prefix"));
         suffix = context.getInitParameter("suffix");
         if (suffix == null) suffix = ".jsp";
+        String uploadPath = context.getInitParameter("upload-path");
+        if (uploadPath != null && !uploadPath.isBlank()) {
+            try {
+                Files.createDirectories(Path.of(uploadPath));
+            } catch (IOException exception) {
+                throw new ServletException("Impossible de créer le répertoire d'upload "
+                        + uploadPath, exception);
+            }
+        }
     }
 
     @Override
