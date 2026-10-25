@@ -74,8 +74,13 @@ public class ControllerServlet extends HttpServlet {
         try {
             Object controller = method.getDeclaringClass()
                     .getDeclaredConstructor().newInstance();
-            Object result = method.invoke(controller,
-                    ServletUtil.arguments(method, request, response));
+            Object[] arguments = ServletUtil.arguments(method, request, response);
+            Object result;
+            try {
+                result = method.invoke(controller, arguments);
+            } finally {
+                ServletUtil.saveSession(arguments);
+            }
 
             if (method.isAnnotationPresent(Json.class)) {
                 ServletUtil.json(response, result);

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import huhu.utils.Mapfiles;
 import huhu.utils.MethodMapp;
+import huhu.utils.Session;
 import huhu.view.ModelAndView;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -40,18 +41,33 @@ final class ServletUtil {
             HttpServletResponse response) throws ServletException {
         Parameter[] parameters = method.getParameters();
         Object[] result = new Object[parameters.length];
+        Session session = null;
         for (int i = 0; i < parameters.length; i++) {
             Class<?> type = parameters[i].getType();
             if (type == HttpServletRequest.class)
                 result[i] = request;
             else if (type == HttpServletResponse.class)
                 result[i] = response;
+            else if (type == Session.class) {
+                if (session == null)
+                    session = new Session(request.getSession());
+                result[i] = session;
+            }
             else {
                 String name = parameters[i].getName();
                 result[i] = parameter(name, request.getParameter(name), type, request);
             }
         }
         return result;
+    }
+
+    static void saveSession(Object[] arguments) {
+        for (Object argument : arguments) {
+            if (argument instanceof Session session) {
+                session.save();
+                return;
+            }
+        }
     }
 
     private static Object parameter(String name, String value, Class<?> type,
