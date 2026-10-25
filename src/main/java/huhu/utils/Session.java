@@ -6,6 +6,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.http.HttpSession;
@@ -26,6 +27,18 @@ public class Session extends AbstractMap<String, Object> {
     @Override
     public Set<Entry<String, Object>> entrySet() {
         return values.entrySet();
+    }
+
+    public Object get(String key) {
+        return values.get(key);
+    }
+
+    public void set(String key, Object value) {
+        values.put(Objects.requireNonNull(key, "key"), value);
+    }
+
+    public Object remove(String key) {
+        return values.remove(key);
     }
 
     public void save() {

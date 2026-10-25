@@ -6,8 +6,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,9 +48,7 @@ final class ServletUtil {
                 result[i] = request;
             else if (type == HttpServletResponse.class)
                 result[i] = response;
-            else if (type == Session.class || type == Map.class) {
-                if (type == Map.class)
-                    validateSessionMap(parameters[i]);
+            else if (type == Session.class) {
                 if (session == null)
                     session = new Session(request.getSession());
                 result[i] = session;
@@ -71,19 +67,6 @@ final class ServletUtil {
                 session.save();
                 return;
             }
-        }
-    }
-
-    private static void validateSessionMap(Parameter parameter)
-            throws ServletException {
-        Type genericType = parameter.getParameterizedType();
-        if (!(genericType instanceof ParameterizedType parameterizedType)
-                || parameterizedType.getRawType() != Map.class
-                || parameterizedType.getActualTypeArguments().length != 2
-                || parameterizedType.getActualTypeArguments()[0] != String.class
-                || parameterizedType.getActualTypeArguments()[1] != Object.class) {
-            throw new ServletException("Le paramètre Map doit être déclaré Map<String, Object> : "
-                    + parameter.getName());
         }
     }
 
