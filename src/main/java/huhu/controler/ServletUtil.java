@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import huhu.utils.Mapfiles;
 import huhu.utils.MethodMapp;
+import huhu.utils.Session;
 import huhu.view.ModelAndView;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -40,18 +43,48 @@ final class ServletUtil {
             HttpServletResponse response) throws ServletException {
         Parameter[] parameters = method.getParameters();
         Object[] result = new Object[parameters.length];
+        Session session = null;
         for (int i = 0; i < parameters.length; i++) {
             Class<?> type = parameters[i].getType();
             if (type == HttpServletRequest.class)
                 result[i] = request;
             else if (type == HttpServletResponse.class)
                 result[i] = response;
+            else if (type == Session.class || type == Map.class) {
+                if (type == Map.class)
+                    validateSessionMap(parameters[i]);
+                if (session == null)
+                    session = new Session(request.getSession());
+                result[i] = session;
+            }
             else {
                 String name = parameters[i].getName();
                 result[i] = parameter(name, request.getParameter(name), type, request);
             }
         }
         return result;
+    }
+
+    static void saveSession(Object[] arguments) {
+        for (Object argument : arguments) {
+            if (argument instanceof Session session) {
+                session.save();
+                return;
+            }
+        }
+    }
+
+    private static void validateSessionMap(Parameter parameter)
+            throws ServletException {
+        Type genericType = parameter.getParameterizedType();
+        if (!(genericType instanceof ParameterizedType parameterizedType)
+                || parameterizedType.getRawType() != Map.class
+                || parameterizedType.getActualTypeArguments().length != 2
+                || parameterizedType.getActualTypeArguments()[0] != String.class
+                || parameterizedType.getActualTypeArguments()[1] != Object.class) {
+            throw new ServletException("Le paramètre Map doit être déclaré Map<String, Object> : "
+                    + parameter.getName());
+        }
     }
 
     private static Object parameter(String name, String value, Class<?> type,
