@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -72,6 +73,11 @@ final class ServletUtil {
 
         HttpSession session = request.getSession(false);
         if (session == null) {
+            return false;
+        }
+
+        if (!Objects.equals(auth.attributeRoleValue(),
+                session.getAttribute(auth.attributeRole()))) {
             return false;
         }
 

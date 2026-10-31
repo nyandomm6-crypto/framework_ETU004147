@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Auth {
     Class<?> value() default Object.class;
+    String attributeRole() default "role";
+    String attributeRoleValue() default "admin";
 }
