@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class ControllerServlet extends HttpServlet {
     private Map<MethodMapp, Method> methods = new HashMap<>();
+    private final Map<Class<?>, Object> controllers = new HashMap<>();
     private String prefix;
     private String suffix;
 
@@ -77,8 +78,7 @@ public class ControllerServlet extends HttpServlet {
         }
 
         try {
-            Object controller = method.getDeclaringClass()
-                    .getDeclaredConstructor().newInstance();
+            Object controller = controller(method.getDeclaringClass());
             Object[] arguments = ServletUtil.arguments(method, request, response);
             Object result;
             try {
@@ -97,6 +97,17 @@ public class ControllerServlet extends HttpServlet {
             }
         } catch (Exception exception) {
             throw new ServletException(exception);
+        }
+    }
+
+    private Object controller(Class<?> controllerClass) throws ReflectiveOperationException {
+        synchronized (controllers) {
+            Object instance = controllers.get(controllerClass);
+            if (instance == null) {
+                instance = controllerClass.getDeclaredConstructor().newInstance();
+                controllers.put(controllerClass, instance);
+            }
+            return instance;
         }
     }
 }
