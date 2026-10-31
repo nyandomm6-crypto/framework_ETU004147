@@ -71,6 +71,11 @@ public class ControllerServlet extends HttpServlet {
             return;
         }
 
+        if (!ServletUtil.isAuthorized(method, request)) {
+            ServletUtil.unauthorized(response);
+            return;
+        }
+
         try {
             Object controller = method.getDeclaringClass()
                     .getDeclaredConstructor().newInstance();

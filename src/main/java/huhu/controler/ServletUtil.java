@@ -9,10 +9,12 @@ import java.lang.reflect.Parameter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import huhu.annotation.Auth;
 import huhu.utils.Mapfiles;
 import huhu.utils.MethodMapp;
 import huhu.utils.Session;
@@ -23,6 +25,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 final class ServletUtil {
@@ -59,6 +62,32 @@ final class ServletUtil {
             }
         }
         return result;
+    }
+
+    static boolean isAuthorized(Method method, HttpServletRequest request) {
+        Auth auth = method.getAnnotation(Auth.class);
+        if (auth == null) {
+            return true;
+        }
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+
+        for (String name : Collections.list(session.getAttributeNames())) {
+            Object value = session.getAttribute(name);
+            if (value != null && auth.value().isInstance(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void unauthorized(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("text/plain;charset=UTF-8");
+        response.getWriter().println("Authentification requise");
     }
 
     static void saveSession(Object[] arguments) {
