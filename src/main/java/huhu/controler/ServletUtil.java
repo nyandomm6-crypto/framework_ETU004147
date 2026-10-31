@@ -3,6 +3,7 @@ package huhu.controler;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -11,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -65,7 +65,8 @@ final class ServletUtil {
         return result;
     }
 
-    static boolean isAuthorized(Method method, HttpServletRequest request) {
+    static boolean isAuthorized(Method method, HttpServletRequest request)
+            throws ServletException {
         Auth auth = method.getAnnotation(Auth.class);
         if (auth == null) {
             return true;
@@ -76,18 +77,55 @@ final class ServletUtil {
             return false;
         }
 
-        if (!Objects.equals(auth.attributeRoleValue(),
-                session.getAttribute(auth.attributeRole()))) {
-            return false;
-        }
-
         for (String name : Collections.list(session.getAttributeNames())) {
-            Object value = session.getAttribute(name);
-            if (value != null && auth.value().isInstance(value)) {
+            Object principal = session.getAttribute(name);
+            if (principal != null && auth.value().isInstance(principal)) {
+                Object role = property(principal, auth.attributeRole());
+                String roleValue = role instanceof Enum<?> enumRole
+                        ? enumRole.name()
+                        : role == null ? null : role.toString();
+                if (!auth.attributeRoleValue().equals(roleValue)) {
+                    continue;
+                }
                 return true;
             }
         }
         return false;
+    }
+
+    private static Object property(Object object, String property)
+            throws ServletException {
+        if (property.isEmpty()) {
+            throw new ServletException("Le nom de la propriété de rôle est vide");
+        }
+        String suffix = Character.toUpperCase(property.charAt(0))
+                + property.substring(1);
+        for (String getterName : new String[] { "get" + suffix, "is" + suffix }) {
+            try {
+                Method getter = object.getClass().getMethod(getterName);
+                return getter.invoke(object);
+            } catch (NoSuchMethodException ignored) {
+                // Try the next getter name, then fall back to a field.
+            } catch (IllegalAccessException | InvocationTargetException exception) {
+                throw new ServletException("Impossible de lire la propriété "
+                        + property + " sur " + object.getClass().getName(), exception);
+            }
+        }
+
+        for (Class<?> type = object.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                Field field = type.getDeclaredField(property);
+                field.setAccessible(true);
+                return field.get(object);
+            } catch (NoSuchFieldException ignored) {
+                // Continue looking in the superclass.
+            } catch (IllegalAccessException | RuntimeException exception) {
+                throw new ServletException("Impossible de lire la propriété "
+                        + property + " sur " + object.getClass().getName(), exception);
+            }
+        }
+        throw new ServletException("Propriété de rôle introuvable : "
+                + object.getClass().getName() + "." + property);
     }
 
     static void unauthorized(HttpServletResponse response) throws IOException {
